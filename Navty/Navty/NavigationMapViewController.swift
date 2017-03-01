@@ -12,9 +12,11 @@ import SnapKit
 
 class NavigationMapViewController: UIViewController, CLLocationManagerDelegate {
 
+    
+    
     var userLatitude = Float()
     var userLongitude = Float()
-    var zoomLevel: Float = 15.0
+    var zoomLevel: Float = 5.0
     let locationManager: CLLocationManager = {
         let locMan: CLLocationManager = CLLocationManager()
         locMan.desiredAccuracy = kCLLocationAccuracyHundredMeters
@@ -22,7 +24,12 @@ class NavigationMapViewController: UIViewController, CLLocationManagerDelegate {
         return locMan
     }()
     let geocoder: CLGeocoder = CLGeocoder()
-     var crimesNYC = [CrimeData]()
+    
+    var crimesNYC = [CrimeData]()
+    var directions = [GoogleDirections]()
+    
+    var path = GMSPath()
+    var polyline = GMSPolyline()
     
     
     override func viewDidLoad() {
@@ -34,10 +41,32 @@ class NavigationMapViewController: UIViewController, CLLocationManagerDelegate {
         locationManager.delegate = self
         locationManager.startUpdatingLocation()
         
+        
         self.view.backgroundColor = UIColor.white
         getData()
     }
+
     
+    func getPolyline() {
+        APIRequestManager.manager.getData(endPoint: "https://maps.googleapis.com/maps/api/directions/json?origin=Disneyland&destination=Universal+Studios+Hollywood4&key=AIzaSyCbkeAtt4S2Cfkji1Z4SBY-TliAQ6QinDc") { (data) in
+            if let validData = data {
+                if let jsonData = try? JSONSerialization.jsonObject(with: validData, options: []),
+                    let google = jsonData as? [String: Any] {
+                    self.directions = GoogleDirections.getData(from: google)
+                    dump(self.directions)
+                    
+                    DispatchQueue.main.async {
+                        self.path = GMSPath(fromEncodedPath: self.directions[0].polyline)!
+                        self.polyline = GMSPolyline(path: self.path)
+                        self.polyline.strokeWidth = 7
+                        self.polyline.strokeColor = .blue
+                        self.polyline.map = self.mapView
+                        
+                    }
+                }
+            }
+        }
+    }
     
     func getData() {
         APIRequestManager.manager.getData(endPoint: "https://data.cityofnewyork.us/resource/7x9x-zpz6.json") { (data) in
@@ -72,7 +101,7 @@ class NavigationMapViewController: UIViewController, CLLocationManagerDelegate {
         mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(mapView)
         mapView.isMyLocationEnabled = true
-        
+        mapView.settings.myLocationButton = true
         mapView.addSubview(searchDestination)
     }
     
