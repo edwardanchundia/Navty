@@ -22,18 +22,47 @@ class NavigationMapViewController: UIViewController, CLLocationManagerDelegate {
         return locMan
     }()
     let geocoder: CLGeocoder = CLGeocoder()
+     var crimesNYC = [CrimeData]()
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         setupViewHierarchy()
         setupViews()
-        
+
         locationManager.delegate = self
         locationManager.startUpdatingLocation()
         
         self.view.backgroundColor = UIColor.white
+        getData()
     }
+    
+    
+    func getData() {
+        APIRequestManager.manager.getData(endPoint: "https://data.cityofnewyork.us/resource/7x9x-zpz6.json") { (data) in
+            if let validData = data {
+                if let jsonData = try? JSONSerialization.jsonObject(with: validData, options: []),
+                    let crimes = jsonData as? [[String: Any]] {
+                    self.crimesNYC = CrimeData.getData(from: crimes)
+                    
+                    for eachCrime in self.crimesNYC {
+                        DispatchQueue.main.async {
+                            let latitude = CLLocationDegrees(eachCrime.latitude)
+                            let longitude = CLLocationDegrees(eachCrime.longitude )
+                            let position = CLLocationCoordinate2D(latitude: latitude! , longitude:longitude! )
+                            
+                            let marker = GMSMarker(position: position)
+                            marker.title = eachCrime.description
+                            marker.map = self.mapView
+                            }
+
+                    }
+                }
+            }
+        }
+    }
+
 
     func setupViewHierarchy() {
         self.edgesForExtendedLayout = []
@@ -95,11 +124,13 @@ class NavigationMapViewController: UIViewController, CLLocationManagerDelegate {
                 let validPlace: CLPlacemark = validPlaceMarks.last else { return }
             print(validPlace)
         }
+       
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         print("Error: \(error)")
     }
+    
     
     internal lazy var mapView: GMSMapView = {
         let mapView = GMSMapView()
