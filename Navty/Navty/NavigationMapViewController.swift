@@ -10,7 +10,7 @@ import UIKit
 import GoogleMaps
 import SnapKit
 
-class NavigationMapViewController: UIViewController, CLLocationManagerDelegate {
+class NavigationMapViewController: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate {
 
     var userLatitude = Float()
     var userLongitude = Float()
@@ -22,8 +22,10 @@ class NavigationMapViewController: UIViewController, CLLocationManagerDelegate {
         return locMan
     }()
     let geocoder: CLGeocoder = CLGeocoder()
+
+    var addressLookUp = String()
+    var marker = GMSMarker()
      var crimesNYC = [CrimeData]()
-    
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -32,6 +34,7 @@ class NavigationMapViewController: UIViewController, CLLocationManagerDelegate {
         setupViews()
 
         locationManager.delegate = self
+        searchDestination.delegate = self
         locationManager.startUpdatingLocation()
         
         self.view.backgroundColor = UIColor.white
@@ -73,7 +76,7 @@ class NavigationMapViewController: UIViewController, CLLocationManagerDelegate {
         view.addSubview(mapView)
         mapView.isMyLocationEnabled = true
         
-        mapView.addSubview(searchDestination)
+        view.addSubview(searchDestination)
     }
     
     func setupViews() {
@@ -131,6 +134,32 @@ class NavigationMapViewController: UIViewController, CLLocationManagerDelegate {
         print("Error: \(error)")
     }
     
+
+    func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
+        searchDestination.showsCancelButton = true
+        
+    }
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        self.addressLookUp = searchDestination.text!
+        print("\(searchBar.text)")
+        self.marker.map = nil
+        
+        geocoder.geocodeAddressString(addressLookUp, completionHandler: { (placemarks, error) -> Void in
+            if error != nil {
+                dump(error)
+            } else if placemarks?[0] != nil {
+                let placemark: CLPlacemark = placemarks![0]
+                let coordinates: CLLocationCoordinate2D = placemark.location!.coordinate
+                print(coordinates)
+                self.marker = GMSMarker(position: coordinates)
+                self.marker.title = "\(placemark)"
+                self.marker.map = self.mapView
+                self.mapView.animate(toLocation: coordinates)
+            }
+        })
+    }
+
     
     internal lazy var mapView: GMSMapView = {
         let mapView = GMSMapView()
@@ -139,7 +168,10 @@ class NavigationMapViewController: UIViewController, CLLocationManagerDelegate {
     
     internal lazy var searchDestination: UISearchBar = {
         let searchBar = UISearchBar()
+        searchBar.backgroundColor = UIColor.white
+        searchBar.searchBarStyle = UISearchBarStyle.default
         searchBar.placeholder = "Desination"
+        searchBar.isUserInteractionEnabled = true
         return searchBar
     }()
 
