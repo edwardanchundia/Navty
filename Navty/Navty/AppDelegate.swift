@@ -18,11 +18,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Override point for customization after application launch.
         GMSServices.provideAPIKey("AIzaSyCbkeAtt4S2Cfkji1Z4SBY-TliAQ6QinDc")
         
-        let navigationMapView = NavigationMapViewController()
-        
+        //let navigationMapView = NavigationMapViewController()
         self.window = UIWindow(frame: UIScreen.main.bounds)
-        self.window?.rootViewController = navigationMapView
         self.window?.makeKeyAndVisible()
+        
+        //let pageVc = pageVC(transitionStyle: .scroll, navigationOrientation: .horizontal)
+        //self.window?.rootViewController = pageVc
+        self.window?.rootViewController = NavigationMapViewController()
         
         return true
     }
